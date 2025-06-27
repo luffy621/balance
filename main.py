@@ -22,5 +22,5 @@ def generate_image(username: str, balance: float, ltc: float, usd: float, user_i
     img.save(buffer, format="PNG")
     buffer.seek(0)
 
-    return StreamingResponse(buffer, media_type="image/png")
+    return StreamingResponse(buffer, media_type="image.png")
    
