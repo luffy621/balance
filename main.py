@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse, JSONResponse
 from PIL import Image, ImageDraw, ImageFont
@@ -41,26 +40,30 @@ def generate_image(
             width=2
         )
 
-        # 3) Font loading helper
+        # 3) Helper to load fonts
         def load_font(path, size):
             try:
                 return ImageFont.truetype(path, size)
             except:
                 return None
 
-        # 4) Choose fonts (fallback order: Inter → Arial → default)
+        # 4) Pick fonts (Inter → Arial → default)
         username_size = 48
         detail_size   = 32
 
-        username_font = load_font("assets/Inter-Bold.ttf", username_size) \
-                        or load_font("arial.ttf", username_size) \
-                        or ImageFont.load_default()
+        username_font = (
+            load_font("assets/Inter-Bold.ttf", username_size)
+            or load_font("arial.ttf", username_size)
+            or ImageFont.load_default()
+        )
 
-        detail_font = load_font("assets/Inter-Regular.ttf", detail_size) \
-                      or load_font("arial.ttf", detail_size) \
-                      or ImageFont.load_default()
+        detail_font = (
+            load_font("assets/Inter-Regular.ttf", detail_size)
+            or load_font("arial.ttf", detail_size)
+            or ImageFont.load_default()
+        )
 
-        # 5) Prepare text lines with colors
+        # 5) Prepare lines with colors
         lines = [
             (username.upper(), username_font, (255, 255, 255, 255)),
             (f"USD Balance: ${balance:.2f}", detail_font, (180, 255, 200, 255)),
@@ -68,13 +71,17 @@ def generate_image(
             (f"User ID: {user_id}", detail_font, (200, 200, 200, 255)),
         ]
 
-        # 6) Draw text inside the card
+        # 6) Draw text and space using draw.textsize()
         x, y = pad + 20, pad + 20
+        line_gap = 10
+
         for text, font, color in lines:
             draw.text((x, y), text, font=font, fill=color)
-            y += font.getsize(text)[1] + 10
+            # get height of this line
+            _, h = draw.textsize(text, font=font)
+            y += h + line_gap
 
-        # 7) Return as PNG
+        # 7) Return PNG
         buf = BytesIO()
         img.save(buf, format="PNG")
         buf.seek(0)
