@@ -21,7 +21,7 @@ def generate_image(
     user_id: int
 ):
     try:
-        # 1) Load background
+        # Load background image
         bg_path = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
         if not os.path.exists(bg_path):
             return JSONResponse({"error": "Background not found."}, status_code=500)
@@ -29,7 +29,7 @@ def generate_image(
         img = bg.copy()
         draw = ImageDraw.Draw(img, "RGBA")
 
-        # 2) Draw semi-transparent card
+        # Draw semi-transparent card
         pad = 30
         card = [pad, pad, img.width - pad, img.height - pad]
         draw.rounded_rectangle(
@@ -40,16 +40,15 @@ def generate_image(
             width=2
         )
 
-        # 3) Helper to load fonts
         def load_font(path, size):
             try:
                 return ImageFont.truetype(path, size)
             except:
                 return None
 
-        # 4) Pick fonts (Inter → Arial → default)
+        # Load fonts
         username_size = 48
-        detail_size   = 32
+        detail_size = 32
 
         username_font = (
             load_font("assets/Inter-Bold.ttf", username_size)
@@ -63,7 +62,7 @@ def generate_image(
             or ImageFont.load_default()
         )
 
-        # 5) Prepare lines with colors
+        # Prepare lines of text
         lines = [
             (username.upper(), username_font, (255, 255, 255, 255)),
             (f"USD Balance: ${balance:.2f}", detail_font, (180, 255, 200, 255)),
@@ -71,17 +70,16 @@ def generate_image(
             (f"User ID: {user_id}", detail_font, (200, 200, 200, 255)),
         ]
 
-        # 6) Draw text and space using draw.textsize()
+        # Draw text lines
         x, y = pad + 20, pad + 20
-        line_gap = 10
-
+        spacing = 10
         for text, font, color in lines:
             draw.text((x, y), text, font=font, fill=color)
-            # get height of this line
-            _, h = draw.textsize(text, font=font)
-            y += h + line_gap
+            bbox = font.getbbox(text)
+            height = bbox[3] - bbox[1]
+            y += height + spacing
 
-        # 7) Return PNG
+        # Return image
         buf = BytesIO()
         img.save(buf, format="PNG")
         buf.seek(0)
