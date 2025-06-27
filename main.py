@@ -21,7 +21,7 @@ def generate_image(
     user_id: int
 ):
     try:
-        # Load the custom background
+        # 🎨 Load your custom gradient background
         bg_path = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
         if not os.path.exists(bg_path):
             return JSONResponse({"error": "Background image not found."}, status_code=500)
@@ -31,13 +31,13 @@ def generate_image(
 
         draw = ImageDraw.Draw(img)
 
-        # Load font — use default if missing
+        # 🖋️ Load font, fallback to default
         try:
             font = ImageFont.truetype("arial.ttf", 28)
         except:
             font = ImageFont.load_default()
 
-        # Compose text
+        # 💬 Compose balance info
         lines = [
             f"{username.upper()}",
             f"Usd Balance: ${balance:.2f}",
@@ -45,14 +45,13 @@ def generate_image(
             f"User ID: {user_id}"
         ]
 
+        # ✏️ Draw text line by line
         x, y = 40, 50
-        line_spacing = 50
-
         for line in lines:
             draw.text((x, y), line, font=font, fill=(255, 255, 255))
-            y += line_spacing
+            y += 50
 
-        # Save and respond with image
+        # 📤 Serve image as response
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         buffer.seek(0)
