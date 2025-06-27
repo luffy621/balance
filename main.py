@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse, JSONResponse
 from PIL import Image, ImageDraw, ImageFont
@@ -6,75 +7,85 @@ import os
 
 app = FastAPI()
 
+# --- Configuration ---
+# Create an 'assets' directory and place your background and font files there.
+BG_PATH = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
+FONT_BOLD_PATH = "assets/fonts/DejaVuSans-Bold.ttf"  # Example: Bold font for titles
+FONT_REGULAR_PATH = "assets/fonts/DejaVuSans.ttf" # Example: Regular font for text
+
+# --- Helper Functions ---
+def load_font(path, size):
+    """Loads a font file, with a fallback to a default font if not found."""
+    try:
+        return ImageFont.truetype(path, size)
+    except IOError:
+        print(f"Warning: Font not found at {path}. Using default font.")
+        return ImageFont.load_default()
+
 @app.get("/")
 def root():
+    """API root endpoint with usage instructions."""
     return {
         "message": "✅ Balance Image API: GET /balance-image?username=...&balance=...&ltc=...&usd=...&user_id=..."
     }
 
 @app.get("/balance-image")
 def generate_image(
-    username: str,
-    balance: float,
-    ltc: float,
-    usd: float,
-    user_id: int
+    username: str = "Anonymous",
+    balance: float = 0.0,
+    ltc: float = 0.0,
+    usd: float = 0.0,
+    user_id: int = 0
 ):
+    """Generates and returns a customized image with user balance details."""
     try:
-        # 1) Load background
-        bg_path = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
-        if not os.path.exists(bg_path):
-            return JSONResponse({"error": "Background not found."}, status_code=500)
-        bg = Image.open(bg_path).convert("RGBA")
-        img = bg.copy()
-        draw = ImageDraw.Draw(img, "RGBA")
+        # 1) Validate that the background image exists
+        if not os.path.exists(BG_PATH):
+            return JSONResponse({"error": f"Background image not found at {BG_PATH}"}, status_code=500)
 
-        # 2) Overlay is just the raw background—no card this time
+        # 2) Load background image
+        with Image.open(BG_PATH).convert("RGBA") as bg:
+            img = bg.copy()
+            draw = ImageDraw.Draw(img, "RGBA")
 
-        # 3) Load your exact fonts & sizes
-        def load_font(path, size):
-            try:
-                return ImageFont.truetype(path, size)
-            except:
-                return None
+            # 3) Load fonts with different sizes
+            # --- CUSTOMIZE YOUR FONTS AND SIZES HERE ---
+            font_title = load_font(FONT_BOLD_PATH, 60)
+            font_large = load_font(FONT_REGULAR_PATH, 48)
+            font_medium = load_font(FONT_REGULAR_PATH, 32)
+            font_small = load_font(FONT_REGULAR_PATH, 24)
 
-        # these sizes match your screenshot
-        USERNAME_SIZE = 36
-        DETAILS_SIZE  = 28
+            # 4) Define content and positions
+            # --- CUSTOMIZE YOUR TEXT LAYOUT HERE ---
+            # (x, y) coordinates from the top-left corner.
+            y_position = 100  # Initial Y position
+            x_padding = 50   # Padding from the left edge
 
-        username_font = (
-            load_font("assets/YourFont-Bold.ttf", USERNAME_SIZE)
-            or ImageFont.load_default()
-        )
-        detail_font = (
-            load_font("assets/YourFont-Regular.ttf", DETAILS_SIZE)
-            or ImageFont.load_default()
-        )
+            # Draw "Username"
+            draw.text((x_padding, y_position), f"User: {username}", font=font_medium, fill="white")
+            y_position += 60 # Move down for the next line
 
-        # 4) Prepare the lines exactly as in your file
-        lines = [
-            (username.upper(), username_font),
-            (f"Usd Balance: {balance}", detail_font),
-            (f"{ltc} LTC ≈ ${usd} USD", detail_font),
-            (f"User ID: {user_id}", detail_font),
-        ]
+            # Draw "User ID"
+            draw.text((x_padding, y_position), f"ID: {user_id}", font=font_small, fill="#E0E0E0")
+            y_position += 150 # Add a larger gap
 
-        # 5) Starting position & exact spacing
-        x, y = 40, 40
-        for text, font in lines:
-            # draw in white
-            draw.text((x, y), text, font=font, fill=(255,255,255,255))
-            # compute height of this line
-            bbox = font.getbbox(text)
-            height = bbox[3] - bbox[1]
-            # add an extra blank line between entries (same height)
-            y += height * 2
+            # Draw "Balance" - using the bold title font
+            draw.text((x_padding, y_position), "Total Balance", font=font_medium, fill="white")
+            y_position += 50
+            draw.text((x_padding, y_position), f"${balance:,.2f}", font=font_title, fill="white")
+            y_position += 120
 
-        # 6) Return PNG
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="image/png")
+            # Draw LTC and USD values using different font sizes
+            draw.text((x_padding, y_position), f"LTC: {ltc}", font=font_large, fill="#DDDDDD")
+            y_position += 70
+            draw.text((x_padding, y_position), f"USD Value: ${usd:,.2f}", font=font_medium, fill="#DDDDDD")
+
+            # 5) Return image as a PNG stream
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            buf.seek(0)
+            return StreamingResponse(buf, media_type="image/png")
 
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        print(f"An error occurred: {e}") # Log the full error to the console
+        return JSONResponse({"error": "An internal server error occurred. Check logs for details."}, status_code=500)
