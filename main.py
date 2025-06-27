@@ -21,65 +21,56 @@ def generate_image(
     user_id: int
 ):
     try:
-        # Load background image
-        bg_path = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
+        # 1) Load background
+        bg_path = "assets/background.png"
         if not os.path.exists(bg_path):
             return JSONResponse({"error": "Background not found."}, status_code=500)
         bg = Image.open(bg_path).convert("RGBA")
         img = bg.copy()
         draw = ImageDraw.Draw(img, "RGBA")
 
-        # Draw semi-transparent card
-        pad = 30
-        card = [pad, pad, img.width - pad, img.height - pad]
-        draw.rounded_rectangle(
-            card,
-            radius=20,
-            fill=(0, 0, 0, 180),
-            outline=(255, 255, 255, 200),
-            width=2
-        )
+        # 2) Overlay is just the raw background—no card this time
 
+        # 3) Load your exact fonts & sizes
         def load_font(path, size):
             try:
                 return ImageFont.truetype(path, size)
             except:
                 return None
 
-        # Load fonts
-        username_size = 48
-        detail_size = 32
+        # these sizes match your screenshot
+        USERNAME_SIZE = 36
+        DETAILS_SIZE  = 28
 
         username_font = (
-            load_font("assets/Inter-Bold.ttf", username_size)
-            or load_font("arial.ttf", username_size)
+            load_font("assets/YourFont-Bold.ttf", USERNAME_SIZE)
             or ImageFont.load_default()
         )
-
         detail_font = (
-            load_font("assets/Inter-Regular.ttf", detail_size)
-            or load_font("arial.ttf", detail_size)
+            load_font("assets/YourFont-Regular.ttf", DETAILS_SIZE)
             or ImageFont.load_default()
         )
 
-        # Prepare lines of text
+        # 4) Prepare the lines exactly as in your file
         lines = [
-            (username.upper(), username_font, (255, 255, 255, 255)),
-            (f"USD Balance: ${balance:.2f}", detail_font, (180, 255, 200, 255)),
-            (f"{ltc:.4f} LTC ≈ ${usd:.2f} USD", detail_font, (200, 200, 255, 255)),
-            (f"User ID: {user_id}", detail_font, (200, 200, 200, 255)),
+            (username.upper(), username_font),
+            (f"Usd Balance: {balance}", detail_font),
+            (f"{ltc} LTC ≈ ${usd} USD", detail_font),
+            (f"User ID: {user_id}", detail_font),
         ]
 
-        # Draw text lines
-        x, y = pad + 20, pad + 20
-        spacing = 10
-        for text, font, color in lines:
-            draw.text((x, y), text, font=font, fill=color)
+        # 5) Starting position & exact spacing
+        x, y = 40, 40
+        for text, font in lines:
+            # draw in white
+            draw.text((x, y), text, font=font, fill=(255,255,255,255))
+            # compute height of this line
             bbox = font.getbbox(text)
             height = bbox[3] - bbox[1]
-            y += height + spacing
+            # add an extra blank line between entries (same height)
+            y += height * 2
 
-        # Return image
+        # 6) Return PNG
         buf = BytesIO()
         img.save(buf, format="PNG")
         buf.seek(0)
