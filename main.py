@@ -73,7 +73,7 @@ def generate_image(
             draw.text((x_padding, y_position), "Total Balance", font=font_medium, fill="white")
             y_position += 50
             draw.text((x_padding, y_position), f"${balance:,.2f}", font=font_title, fill="white")
-            y_position += 120
+            y_position += 70
 
             # Draw LTC and USD values using different font sizes
             draw.text((x_padding, y_position), f"LTC: {ltc}", font=font_large, fill="#DDDDDD")
