@@ -22,7 +22,7 @@ def generate_image(
 ):
     try:
         # Load the custom background
-        bg_path = "assets/background.png"
+        bg_path = "assets/artistic-blurry-colorful-wallpaper-background_58702-8667.webp"
         if not os.path.exists(bg_path):
             return JSONResponse({"error": "Background image not found."}, status_code=500)
 
